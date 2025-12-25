@@ -25,6 +25,8 @@ public class User {
     @Column(unique = true)
     private String username;
     private String password;
+    
+    @Column(unique = true)
     private String email;
 
     // 프로필 이미지 파일명 (선택사항)

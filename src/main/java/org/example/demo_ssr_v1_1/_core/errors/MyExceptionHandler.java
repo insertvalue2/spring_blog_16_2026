@@ -20,14 +20,26 @@ public class MyExceptionHandler {
 
     // 내가 지켜볼 예외를 명시를 해주면 ControllerAdvice 가 가지고와 처리 함
     @ExceptionHandler(Exception400.class)
-    public String ex400(Exception400 e, HttpServletRequest request, Model model) {
+    @ResponseBody
+    public ResponseEntity<String> ex400(Exception400 e, HttpServletRequest request) {
         log.warn("=== 400 에러 발생  ===");
         log.warn("요청 URL : {}", request.getRequestURL());
         log.warn("에러 메세지 : {}", e.getMessage());
         log.warn("예외 클래스 : {}", e.getClass().getSimpleName());
-        model.addAttribute("msg", e.getMessage());
-        // [수정] request.setAttribute -> model.addAttribute
-        return "err/400";
+        
+        // 메시지의 작은따옴표를 이스케이프 처리
+        // 작은따옴표 이스케이프 처리는 에러 메시지에 작은따옴표가 포함되어도
+        // JavaScript 구문 오류 없이 alert 창이 정상 표시되도록 하기 위함
+        String message = e.getMessage() != null ? e.getMessage() : "잘못된 요청입니다";
+        String escapedMessage = message.replace("'", "\\'");
+        String script = "<script>alert('" + escapedMessage + "');" +
+                "history.back();" +
+                "</script>";
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .contentType(MediaType.TEXT_HTML)
+                .body(script);
     }
 
     // 401 인증 오류
@@ -115,21 +127,42 @@ public class MyExceptionHandler {
 
     // 데이터베이스 제약조건 위반 오류 처리
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public String handleDataIntegrityViolationException(DataIntegrityViolationException e,
-                                                         HttpServletRequest request, Model model) {
+    @ResponseBody
+    public ResponseEntity<String> handleDataIntegrityViolationException(DataIntegrityViolationException e,
+                                                         HttpServletRequest request) {
         log.warn("=== 데이터베이스 제약조건 위반 오류 발생  ===");
         log.warn("요청 URL : {}", request.getRequestURL());
         log.warn("에러 메세지 : {}", e.getMessage());
         log.warn("예외 클래스 : {}", e.getClass().getSimpleName());
         
-        // 외래키 제약조건 위반인 경우
         String errorMessage = e.getMessage();
-        if (errorMessage != null && errorMessage.contains("FOREIGN KEY")) {
-            model.addAttribute("msg", "관련된 데이터가 있어 삭제할 수 없습니다. (예: 게시글에 댓글이 있는 경우)");
+        String userMessage;
+        
+        // 유니크 제약조건 위반 (중복 데이터)
+        if (errorMessage != null) {
+            if (errorMessage.contains("username") || errorMessage.contains("UK_") && errorMessage.contains("username")) {
+                userMessage = "이미 존재하는 사용자 이름입니다";
+            } else if (errorMessage.contains("email") || errorMessage.contains("UK_") && errorMessage.contains("email")) {
+                userMessage = "이미 등록된 이메일입니다";
+            } else if (errorMessage.contains("FOREIGN KEY")) {
+                userMessage = "관련된 데이터가 있어 삭제할 수 없습니다. (예: 게시글에 댓글이 있는 경우)";
+            } else {
+                userMessage = "데이터베이스 제약조건 위반이 발생했습니다";
+            }
         } else {
-            model.addAttribute("msg", "데이터베이스 제약조건 위반: " + e.getMessage());
+            userMessage = "데이터베이스 제약조건 위반이 발생했습니다";
         }
-        return "err/500";
+        
+        // 메시지의 작은따옴표를 이스케이프 처리
+        String escapedMessage = userMessage.replace("'", "\\'");
+        String script = "<script>alert('" + escapedMessage + "');" +
+                "history.back();" +
+                "</script>";
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .contentType(MediaType.TEXT_HTML)
+                .body(script);
     }
 
     // 기타 모든 실행시점 오류 처리

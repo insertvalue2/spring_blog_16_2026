@@ -54,6 +54,27 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsername(String username);
     
     /**
+     * 이메일로 사용자 조회
+     * 
+     * 쿼리 메서드 네이밍:
+     * - findBy: 조회 시작
+     * - Email: 엔티티의 email 필드명과 일치
+     * - Optional<User>: 결과가 없을 수 있으므로 Optional로 반환
+     * 
+     * 자동 생성되는 SQL:
+     * SELECT * FROM user_tb WHERE email = ?
+     * 
+     * 사용 예시:
+     * Optional<User> user = userRepository.findByEmail("test@example.com");
+     * if (user.isPresent()) {
+     *     // 이메일이 이미 존재함 (중복)
+     * } else {
+     *     // 이메일 사용 가능
+     * }
+     */
+    Optional<User> findByEmail(String email);
+    
+    /**
      * 사용자명과 비밀번호로 사용자 조회 (로그인용)
      * 
      * ⚠️ 주의: 비밀번호 암호화 적용 후 더 이상 사용하지 않습니다.

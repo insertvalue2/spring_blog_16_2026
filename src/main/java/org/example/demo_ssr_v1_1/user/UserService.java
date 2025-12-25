@@ -63,6 +63,12 @@ public class UserService {
             throw new Exception400("이미 존재하는 사용자 이름입니다");
         }
 
+        // 2-1. 이메일 중복 체크
+        // 회원가입 시 이메일이 이미 등록되어 있는지 확인
+        if (userRepository.findByEmail(joinDTO.getEmail()).isPresent()) {
+            throw new Exception400("이미 등록된 이메일입니다");
+        }
+
         // 3. 프로필 이미지 저장 (선택사항)
         // 중요: 프로필 이미지는 필수가 아닌 선택사항입니다!
         // 사용자가 이미지를 업로드하지 않아도 회원가입은 정상적으로 진행됩니다.
